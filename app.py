@@ -661,7 +661,7 @@ elif page == "Weekly Report":
             "Student", ["All"] + sorted(weekly_cefr["student"].unique().tolist())
         )
     with f2:
-        sel_month = st.multiselect("Month", MONTH_ORDER, default=MONTH_ORDER)
+        sel_month = st.multiselect("Month", CHART_MONTHS, default=CHART_MONTHS)
 
     filtered = weekly_cefr[weekly_cefr["month"].isin(sel_month)]
     if sel_student != "All":
