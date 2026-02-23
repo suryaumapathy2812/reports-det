@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import json
 from scipy.stats import gaussian_kde
 
 # ─── Page Config ──────────────────────────────────────────────────────────────
@@ -277,7 +278,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["Program Overview", "Student Wise Data", "Weekly Report"],
+    ["Program Overview", "Student Wise Data", "Weekly Report", "Mentor Feedback"],
 )
 
 st.sidebar.markdown("---")
@@ -339,6 +340,16 @@ if page == "Program Overview":
         "December": ("rgba(147,197,253,0.5)", "#3b82f6"),  # blue
         "January": ("rgba(167,243,208,0.5)", "#10b981"),  # green
     }
+
+    # Show mean metrics per month (like Monthly Summary cards)
+    adp_cols = st.columns(len(CHART_MONTHS))
+    for col, month in zip(adp_cols, CHART_MONTHS):
+        month_data = (
+            effort[effort["month"] == month]["avg_daily_mins"].dropna().astype(float)
+        )
+        year = "2025" if month == "December" else "2026"
+        if not month_data.empty:
+            col.metric(f"{month} {year}", f"{month_data.mean():.1f} min")
 
     fig_adp = go.Figure()
     x_max = 0
@@ -420,6 +431,17 @@ if page == "Program Overview":
     st.markdown("---")
     st.subheader("Student Outcome (CEFR)")
     st.caption("Number of students at each CEFR level, by month.")
+
+    # Show per-level student counts grouped by month
+    DISPLAY_LEVELS = ["Pre-A1", "A1", "A2"]
+    for month in CHART_MONTHS:
+        month_combined = combined[combined["month"] == month]
+        year = "2025" if month == "December" else "2026"
+        st.caption(f"**{month} {year}**")
+        level_cols = st.columns(len(DISPLAY_LEVELS))
+        for col, level in zip(level_cols, DISPLAY_LEVELS):
+            n = int((month_combined["overall_level"] == level).sum())
+            col.metric(level, n)
 
     MONTH_BAR_COLORS = {"December": "#93c5fd", "January": "#6ee7b7"}
 
@@ -736,6 +758,107 @@ elif page == "Weekly Report":
                 st.markdown(
                     f"**Coherence ({row['coherence']}):** {row.get('coherence_structure', '—')}"
                 )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAGE 4: MENTOR FEEDBACK
+# ═══════════════════════════════════════════════════════════════════════════════
+elif page == "Mentor Feedback":
+    st.title("Mentor Feedback")
+
+    @st.cache_data
+    def load_mentor_feedback():
+        with open("data/mentor_feedback.json", "r") as f:
+            return json.load(f)
+
+    feedback_data = load_mentor_feedback()
+    mentors = sorted(feedback_data.keys())
+
+    # Flatten to a single dataframe for cross-mentor student lookup
+    all_rows = []
+    for mentor, entries in feedback_data.items():
+        for e in entries:
+            all_rows.append(
+                {
+                    "mentor": mentor,
+                    "date": e["date"],
+                    "cohort": e["cohort"],
+                    "student": e["student"],
+                    "feedback": e["feedback"],
+                }
+            )
+    feedback_df = pd.DataFrame(all_rows)
+    feedback_df["date"] = pd.to_datetime(feedback_df["date"])
+
+    # ── Filters ──────────────────────────────────────────────────────────────
+    col_m, col_s = st.columns([1, 2])
+    with col_m:
+        selected_mentor = st.selectbox("Mentor", ["All"] + mentors)
+    with col_s:
+        filtered_fb = (
+            feedback_df
+            if selected_mentor == "All"
+            else feedback_df[feedback_df["mentor"] == selected_mentor]
+        )
+        student_options = sorted(filtered_fb["student"].dropna().unique().tolist())
+        selected_student = st.selectbox("Student", ["All"] + student_options)
+
+    # Apply filters
+    view = filtered_fb.copy()
+    if selected_student != "All":
+        view = view[view["student"] == selected_student]
+
+    view = view.sort_values(["student", "date"])
+
+    st.markdown("---")
+
+    # ── Summary metrics ───────────────────────────────────────────────────────
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Mentors", len(feedback_data) if selected_mentor == "All" else 1)
+    m2.metric("Students", view["student"].nunique())
+    m3.metric("Feedback Entries", int(view["feedback"].notna().sum()))
+
+    st.markdown("---")
+
+    # ── Student-wise view ─────────────────────────────────────────────────────
+    if selected_student != "All":
+        st.subheader(f"{selected_student}")
+        student_entries = view[view["feedback"].notna()].sort_values("date")
+        if len(student_entries) == 0:
+            st.info("No feedback recorded for this student.")
+        else:
+            for _, row in student_entries.iterrows():
+                with st.expander(
+                    f"📅 {row['date'].strftime('%d %b %Y')}  ·  {row['mentor']}  ·  {row['cohort']}"
+                ):
+                    st.markdown(row["feedback"])
+
+    # ── Mentor-wise or all view ───────────────────────────────────────────────
+    else:
+        for mentor in mentors if selected_mentor == "All" else [selected_mentor]:
+            mentor_view = view[view["mentor"] == mentor]
+            with st.expander(
+                f"**{mentor}** — {mentor_view['student'].nunique()} students · {int(mentor_view['feedback'].notna().sum())} entries",
+                expanded=False,
+            ):
+                for student in sorted(mentor_view["student"].unique()):
+                    s_entries = mentor_view[
+                        (mentor_view["student"] == student)
+                        & mentor_view["feedback"].notna()
+                    ].sort_values("date")
+                    if len(s_entries) == 0:
+                        continue
+                    st.markdown(f"**{student}**")
+                    for _, row in s_entries.iterrows():
+                        st.markdown(
+                            f"<div style='background:#f8fafc;border-left:3px solid #93c5fd;"
+                            f"padding:8px 12px;margin:4px 0 8px 0;border-radius:4px;"
+                            f"font-size:0.9rem;color:#1e293b'>"
+                            f"<span style='color:#64748b;font-size:0.8rem'>{row['date'].strftime('%d %b %Y')} · {row['cohort']}</span><br>"
+                            f"{row['feedback']}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    st.markdown("")
 
 
 # ─── Footer ───────────────────────────────────────────────────────────────────
