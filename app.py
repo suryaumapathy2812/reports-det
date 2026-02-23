@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from scipy.stats import gaussian_kde
 
 # ─── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -17,24 +18,33 @@ st.set_page_config(
 )
 
 # ─── Constants ────────────────────────────────────────────────────────────────
-CEFR_ORDER = ["Pre-A1", "A1", "Strong A1", "A2", "Strong A2", "B1", "B2"]
+CEFR_ORDER = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]
 CEFR_NUMERIC = {
     "Pre-A1": 0,
     "A1": 1,
-    "Strong A1": 1.5,
     "A2": 2,
-    "Strong A2": 2.5,
     "B1": 3,
     "B2": 4,
+    "C1": 5,
+    "C2": 6,
 }
 CEFR_COLORS = {
     "Pre-A1": "#ef4444",
     "A1": "#f97316",
-    "Strong A1": "#f59e0b",
     "A2": "#eab308",
-    "Strong A2": "#84cc16",
     "B1": "#22c55e",
     "B2": "#06b6d4",
+    "C1": "#8b5cf6",
+    "C2": "#ec4899",
+}
+
+# Remap raw data levels → display labels
+# A1 (raw) → Pre-A1, Strong A1 (raw) → A1, A2 (raw) → A2, Strong A2 (raw) → A2
+LEVEL_REMAP = {
+    "A1": "Pre-A1",
+    "Strong A1": "A1",
+    "A2": "A2",
+    "Strong A2": "A2",
 }
 MONTH_ORDER = ["December", "January", "February"]
 DIMENSIONS = ["fluency", "accuracy", "range", "coherence"]
@@ -50,7 +60,7 @@ def load_data():
     for df in [monthly_cefr, weekly_cefr, effort]:
         df["month"] = pd.Categorical(df["month"], categories=MONTH_ORDER, ordered=True)
 
-    weekly_cefr["overall_numeric"] = weekly_cefr["overall_level"].map(CEFR_NUMERIC)
+    # overall_numeric computed after remap (see below load_data call)
 
     # Merge effort into monthly CEFR
     combined = monthly_cefr.merge(
@@ -90,9 +100,8 @@ def load_data():
             )
 
         student_totals["engagement_score"] = (
-            student_totals["total_sessions_norm"] * 0.3
-            + student_totals["total_mins_norm"] * 0.4
-            + student_totals["avg_consistency_norm"] * 0.3
+            student_totals["total_sessions_norm"] * 0.5
+            + student_totals["total_mins_norm"] * 0.5
         )
         p80 = student_totals["engagement_score"].quantile(0.80)
         p40 = student_totals["engagement_score"].quantile(0.40)
@@ -121,10 +130,68 @@ def load_data():
 
 monthly_cefr, weekly_cefr, effort, combined, student_totals = load_data()
 
+# ─── Exclude February from all charts (keep raw effort for Monthly Summary) ──
+CHART_MONTHS = ["December", "January"]
+combined = combined[combined["month"].isin(CHART_MONTHS)].copy()
+weekly_cefr = weekly_cefr[weekly_cefr["month"].isin(CHART_MONTHS)].copy()
+# Recompute student_totals from Dec+Jan effort only (for charts)
+effort_chart = effort[effort["month"].isin(CHART_MONTHS)].copy()
+student_totals_chart = (
+    effort_chart.groupby("student")
+    .agg(
+        total_sessions=("session_count", "sum"),
+        total_mins=("total_duration_mins", "sum"),
+        avg_consistency=("consistency_pct", "mean"),
+    )
+    .reset_index()
+)
+if len(student_totals_chart) > 0:
+    for col in ["total_sessions", "total_mins", "avg_consistency"]:
+        mn, mx = student_totals_chart[col].min(), student_totals_chart[col].max()
+        student_totals_chart[f"{col}_norm"] = (student_totals_chart[col] - mn) / (
+            mx - mn + 1e-9
+        )
+    student_totals_chart["engagement_score"] = (
+        student_totals_chart["total_sessions_norm"] * 0.5
+        + student_totals_chart["total_mins_norm"] * 0.5
+    )
+    p80 = student_totals_chart["engagement_score"].quantile(0.80)
+    p40 = student_totals_chart["engagement_score"].quantile(0.40)
+    student_totals_chart["engagement"] = student_totals_chart["engagement_score"].apply(
+        lambda x: "High" if x >= p80 else ("Medium" if x >= p40 else "Low")
+    )
+# Replace student_totals used by charts (Monthly Summary keeps original `effort`)
+student_totals = student_totals_chart
+
+
+# ─── Apply display-level remap to all level columns ──────────────────────────
+def remap_levels(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    level_cols = [
+        c
+        for c in df.columns
+        if c.endswith("_level")
+        or c == "overall_level"
+        or c in ("fluency", "accuracy", "range", "coherence")
+    ]
+    for col in level_cols:
+        if col in df.columns:
+            df[col] = df[col].map(
+                lambda v: LEVEL_REMAP.get(v, v) if isinstance(v, str) else v
+            )
+    return df
+
+
+combined = remap_levels(combined)
+weekly_cefr = remap_levels(weekly_cefr)
+
+# Compute overall_numeric after remap so labels are already clean
+weekly_cefr["overall_numeric"] = weekly_cefr["overall_level"].map(CEFR_NUMERIC)
+
 
 # ─── Compute per-student movement (dimension-level) ──────────────────────────
-@st.cache_data
-def compute_student_movements(_combined):
+@st.cache_data(show_spinner=False)
+def compute_student_movements(_combined, _version=2):
     results = []
     for student in _combined["student"].unique():
         sdata = _combined[_combined["student"] == student].sort_values("month")
@@ -133,6 +200,7 @@ def compute_student_movements(_combined):
             entry = {
                 "student": student,
                 "engagement": row.get("engagement", "—"),
+                "engagement_score": row.get("engagement_score", 0),
                 "months_active": 1,
                 "total_sessions": row.get("total_sessions", 0),
                 "total_mins": row.get("total_mins", 0),
@@ -157,6 +225,7 @@ def compute_student_movements(_combined):
         entry = {
             "student": student,
             "engagement": first.get("engagement", "—"),
+            "engagement_score": first.get("engagement_score", 0),
             "months_active": len(sdata),
             "total_sessions": first.get("total_sessions", 0),
             "total_mins": first.get("total_mins", 0),
@@ -179,9 +248,16 @@ def compute_student_movements(_combined):
 
         f_overall = pd.to_numeric(first.get("overall_numeric"), errors="coerce") or 0
         l_overall = pd.to_numeric(last.get("overall_numeric"), errors="coerce") or 0
-        entry["overall_first"] = first.get("overall_level", "—")
-        entry["overall_last"] = last.get("overall_level", "—")
-        entry["overall_movement"] = round(float(l_overall) - float(f_overall), 2)
+        f_label = first.get("overall_level", "—")
+        l_label = last.get("overall_level", "—")
+        f_idx = CEFR_ORDER.index(f_label) if f_label in CEFR_ORDER else -1
+        l_idx = CEFR_ORDER.index(l_label) if l_label in CEFR_ORDER else -1
+        label_movement = l_idx - f_idx  # based on CEFR label rank, not numeric
+        entry["overall_first"] = f_label
+        entry["overall_last"] = l_label
+        entry["overall_movement"] = (
+            label_movement  # 0 = stable, >0 = improved, <0 = declined
+        )
         entry["any_improved"] = len(improved_dims) > 0
         entry["any_declined"] = len(declined_dims) > 0
         entry["dims_improved"] = ", ".join(improved_dims)
@@ -201,7 +277,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["Program Overview", "Student Lookup", "Weekly Detail (Teachers)"],
+    ["Program Overview", "Student Wise Data", "Weekly Report"],
 )
 
 st.sidebar.markdown("---")
@@ -251,194 +327,199 @@ if page == "Program Overview":
             st.metric("Practice Time", f"{m_hours:.1f} hrs")
 
     # ══════════════════════════════════════════════════════════════════════
-    # CEFR COHORT SHIFT — ONE CHART
+    # AVG DAILY PRACTICE DISTRIBUTION — BY MONTH
     # ══════════════════════════════════════════════════════════════════════
     st.markdown("---")
-    st.subheader("CEFR Distribution — How the Cohort is Moving")
-
-    dist_data = []
-    for month in MONTH_ORDER:
-        month_data = combined[combined["month"] == month]
-        if len(month_data) == 0:
-            continue
-        total = len(month_data)
-        for level in CEFR_ORDER:
-            count = len(month_data[month_data["overall_level"] == level])
-            if count > 0:
-                dist_data.append(
-                    {
-                        "Month": month,
-                        "CEFR Level": level,
-                        "Students": count,
-                        "Percentage": round(count / total * 100, 1),
-                    }
-                )
-
-    if dist_data:
-        dist_df = pd.DataFrame(dist_data)
-        fig = px.bar(
-            dist_df,
-            x="Month",
-            y="Percentage",
-            color="CEFR Level",
-            text=dist_df.apply(lambda r: f"{r['CEFR Level']}: {r['Students']}", axis=1),
-            color_discrete_map=CEFR_COLORS,
-            category_orders={"Month": MONTH_ORDER, "CEFR Level": CEFR_ORDER},
-            barmode="stack",
-            height=420,
-        )
-        fig.update_traces(textposition="inside", textfont_size=13)
-        fig.update_layout(
-            xaxis_title="",
-            yaxis_title="% of Students",
-            font=dict(size=13),
-            margin=dict(l=40, r=20, t=20, b=30),
-            legend_title="CEFR Level",
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Summary sentence
-    trackable = movements_df[movements_df["months_active"] >= 2]
-    improved_count = int(trackable["any_improved"].sum())
-    total_trackable = len(trackable)
-    stable_count = total_trackable - improved_count
-    st.markdown(
-        f"Of **{total_trackable}** students tracked across months: "
-        f"**{improved_count}** ({improved_count * 100 // max(total_trackable, 1)}%) improved in at least one CEFR dimension, "
-        f"**{stable_count}** remained stable."
-    )
-
-    # ══════════════════════════════════════════════════════════════════════
-    # EFFORT → RESULTS: THE STORIES YOGESH WANTS
-    # ══════════════════════════════════════════════════════════════════════
-    st.markdown("---")
-    st.subheader("Effort vs Results")
+    st.subheader("Average Daily Practice — Distribution by Month")
     st.caption(
-        "Who put in the work and improved? Who didn't practice enough? "
-        "Engagement = High (top 20%), Medium (middle 40%), Low (bottom 40%) "
-        "— based on sessions, practice time, and consistency."
+        "How many minutes per day each student practiced on average. Shows spread across the cohort."
     )
 
-    # Build the effort-results table
-    trackable_df = movements_df[movements_df["months_active"] >= 2].copy()
-    trackable_df["total_sessions"] = trackable_df["total_sessions"].astype(int)
-    trackable_df["total_hrs"] = (trackable_df["total_mins"] / 60).round(1)
+    MONTH_COLORS = {
+        "December": ("rgba(147,197,253,0.5)", "#3b82f6"),  # blue
+        "January": ("rgba(167,243,208,0.5)", "#10b981"),  # green
+    }
 
-    def classify_student(row):
-        high_effort = row["engagement"] in ["High", "Medium"]
-        improved = row["any_improved"]
-        if row["engagement"] == "High" and improved:
-            return "✅ High effort, improved"
-        elif row["engagement"] == "High" and not improved:
-            return "⚠️ High effort, no improvement"
-        elif row["engagement"] == "Medium" and improved:
-            return "✅ Medium effort, improved"
-        elif row["engagement"] == "Medium" and not improved:
-            return "➡️ Medium effort, stable"
-        elif row["engagement"] == "Low" and improved:
-            return "🌟 Low effort, but improved"
-        else:
-            return "🔴 Low effort, no improvement"
+    fig_adp = go.Figure()
+    x_max = 0
 
-    trackable_df["Category"] = trackable_df.apply(classify_student, axis=1)
+    for month in CHART_MONTHS:
+        month_data = (
+            effort[effort["month"] == month]["avg_daily_mins"].dropna().astype(float)
+        )
+        if month_data.empty:
+            continue
 
-    # ── Success stories: High effort + improved ───────────────────────
-    st.markdown("#### ✅ Success Stories — High Effort & Improved")
-    st.caption("Students who practiced consistently and showed CEFR improvement")
+        n = len(month_data)
+        mean_val = month_data.mean()
+        year = "2025" if month == "December" else "2026"
+        bar_color, line_color = MONTH_COLORS[month]
+        bin_width = 0.5
+        x_max = max(x_max, month_data.max())
 
-    success = trackable_df[
-        (trackable_df["engagement"] == "High") & (trackable_df["any_improved"])
-    ].sort_values("total_mins", ascending=False)
+        # Histogram
+        fig_adp.add_trace(
+            go.Histogram(
+                x=month_data,
+                xbins=dict(start=0, end=x_max + 1, size=bin_width),
+                marker_color=bar_color,
+                marker_line=dict(color=line_color, width=1),
+                name=f"{month} {year} (n={n}, mean={mean_val:.1f})",
+                opacity=0.8,
+            )
+        )
 
-    if len(success) > 0:
-        success_rows = []
-        for _, row in success.iterrows():
-            success_rows.append(
+        # KDE curve
+        kde = gaussian_kde(month_data, bw_method=0.4)
+        x_range = np.linspace(0, x_max + 1, 300)
+        kde_y_scaled = kde(x_range) * n * bin_width
+        fig_adp.add_trace(
+            go.Scatter(
+                x=x_range,
+                y=kde_y_scaled,
+                mode="lines",
+                line=dict(color=line_color, width=2.5),
+                showlegend=False,
+                hoverinfo="skip",
+            )
+        )
+
+        # Mean line
+        fig_adp.add_vline(
+            x=mean_val,
+            line_dash="dash",
+            line_color=line_color,
+            line_width=1.5,
+            annotation_text=f"{month[:3]} mean {mean_val:.1f}",
+            annotation_position="top",
+            annotation_font_color=line_color,
+            annotation_font_size=11,
+        )
+
+    fig_adp.update_layout(
+        barmode="overlay",
+        plot_bgcolor="white",
+        xaxis=dict(
+            title="Avg Daily Practice (min)",
+            showgrid=False,
+            zeroline=False,
+            range=[0, x_max + 1],
+        ),
+        yaxis=dict(
+            title="Students", showgrid=True, gridcolor="#e2e8f0", zeroline=False
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=10, r=10, t=40, b=40),
+        height=360,
+    )
+    st.plotly_chart(fig_adp, use_container_width=True)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # CEFR LEVEL DISTRIBUTION — WHERE STUDENTS STAND
+    # ══════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    st.subheader("Student Outcome (CEFR)")
+    st.caption("Number of students at each CEFR level, by month.")
+
+    MONTH_BAR_COLORS = {"December": "#93c5fd", "January": "#6ee7b7"}
+
+    fig_cefr_dist = go.Figure()
+    for month in CHART_MONTHS:
+        month_combined = combined[combined["month"] == month]
+        if month_combined.empty:
+            continue
+        year = "2025" if month == "December" else "2026"
+        n = len(month_combined)
+        label = "Baseline" if month == "December" else "Midline"
+        level_counts = (
+            month_combined["overall_level"]
+            .value_counts()
+            .reindex(CEFR_ORDER, fill_value=0)
+            .reset_index()
+        )
+        level_counts.columns = ["Level", "Students"]
+        fig_cefr_dist.add_trace(
+            go.Bar(
+                x=level_counts["Level"],
+                y=level_counts["Students"],
+                text=level_counts["Students"],
+                textposition="outside",
+                name=f"{month} {year} (n={n}, {label})",
+                marker_color=MONTH_BAR_COLORS[month],
+                hovertemplate=f"<b>%{{x}}</b><br>{month}: %{{y}} students<extra></extra>",
+            )
+        )
+
+    fig_cefr_dist.update_layout(
+        barmode="group",
+        plot_bgcolor="white",
+        xaxis=dict(
+            title="CEFR Level",
+            categoryorder="array",
+            categoryarray=CEFR_ORDER,
+            showgrid=False,
+        ),
+        yaxis=dict(
+            title="Students",
+            showgrid=True,
+            gridcolor="#e2e8f0",
+            zeroline=False,
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=10, r=10, t=40, b=40),
+        height=360,
+        bargap=0.2,
+        bargroupgap=0.05,
+    )
+    st.plotly_chart(fig_cefr_dist, use_container_width=True)
+
+    # ══════════════════════════════════════════════════════════════════════
+    # LEVEL TRANSITIONS
+    # ══════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    st.subheader("Level Transitions")
+    st.caption(
+        "Students who moved up at least one full CEFR level — "
+        "Pre-A1 → A1, A1 → A2, or Pre-A1 → A2."
+    )
+
+    VALID_TRANSITIONS = {
+        ("Pre-A1", "A1"),
+        ("A1", "A2"),
+        ("Pre-A1", "A2"),
+    }
+
+    transition_rows = []
+    for _, row in movements_df[movements_df["months_active"] >= 2].iterrows():
+        pair = (row["overall_first"], row["overall_last"])
+        if pair in VALID_TRANSITIONS:
+            transition_rows.append(
                 {
                     "Student": row["student"],
-                    "Sessions": int(row["total_sessions"]),
-                    "Practice": f"{row['total_hrs']} hrs",
-                    "CEFR": f"{row['overall_first']} → {row['overall_last']}",
-                    "Improved In": row["dims_improved"],
+                    "From": row["overall_first"],
+                    "To": row["overall_last"],
                 }
             )
-        st.dataframe(
-            pd.DataFrame(success_rows),
-            use_container_width=True,
-            hide_index=True,
-        )
+
+    if transition_rows:
+        trans_df = pd.DataFrame(transition_rows).sort_values(["From", "To"])
+        # Summary counts
+        t1, t2, t3 = st.columns(3)
+        for col, (frm, to) in zip(
+            [t1, t2, t3], [("Pre-A1", "A1"), ("A1", "A2"), ("Pre-A1", "A2")]
+        ):
+            n = int(((trans_df["From"] == frm) & (trans_df["To"] == to)).sum())
+            col.metric(f"{frm} → {to}", n)
+        st.dataframe(trans_df, use_container_width=True, hide_index=True)
     else:
-        st.info("No high-engagement students with improvement found.")
-
-    # ── Low effort, no improvement ────────────────────────────────────
-    st.markdown("#### 🔴 Low Effort, No Improvement")
-    st.caption("Students who haven't practiced enough and show no CEFR movement")
-
-    low_no_improve = trackable_df[
-        (trackable_df["engagement"] == "Low") & (~trackable_df["any_improved"])
-    ].sort_values("total_mins", ascending=True)
-
-    if len(low_no_improve) > 0:
-        low_rows = []
-        for _, row in low_no_improve.iterrows():
-            low_rows.append(
-                {
-                    "Student": row["student"],
-                    "Sessions": int(row["total_sessions"]),
-                    "Practice": f"{row['total_hrs']} hrs",
-                    "CEFR": f"{row['overall_first']} → {row['overall_last']}",
-                    "Status": "No improvement",
-                }
-            )
-        st.dataframe(
-            pd.DataFrame(low_rows),
-            use_container_width=True,
-            hide_index=True,
-        )
-    else:
-        st.info("No low-engagement students without improvement.")
-
-    # ── Full student list (collapsed) ─────────────────────────────────
-    with st.expander("View all students — effort & CEFR movement"):
-        all_rows = []
-        for _, row in trackable_df.sort_values(
-            "total_mins", ascending=False
-        ).iterrows():
-            all_rows.append(
-                {
-                    "Student": row["student"],
-                    "Engagement": row["engagement"],
-                    "Sessions": int(row["total_sessions"]),
-                    "Practice": f"{row['total_hrs']} hrs",
-                    "CEFR": f"{row['overall_first']} → {row['overall_last']}",
-                    "Improved In": row["dims_improved"]
-                    if row["dims_improved"]
-                    else "—",
-                    "Declined In": row["dims_declined"]
-                    if row["dims_declined"]
-                    else "—",
-                }
-            )
-        st.dataframe(
-            pd.DataFrame(all_rows),
-            use_container_width=True,
-            hide_index=True,
-            height=500,
-        )
-
-        # Also show single-month students
-        single_month = movements_df[movements_df["months_active"] < 2]
-        if len(single_month) > 0:
-            st.caption(
-                f"**{len(single_month)}** students have only 1 month of data — not enough to track movement."
-            )
+        st.info("No level transitions found in the current data.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE 2: STUDENT LOOKUP
 # ═══════════════════════════════════════════════════════════════════════════════
-elif page == "Student Lookup":
-    st.title("Student Lookup")
+elif page == "Student Wise Data":
+    st.title("Student Wise Data")
 
     selected = st.selectbox("Select Student", sorted(combined["student"].unique()))
 
@@ -447,18 +528,14 @@ elif page == "Student Lookup":
         st_row = student_totals[student_totals["student"] == selected]
         mv_row = movements_df[movements_df["student"] == selected]
 
-        engagement = st_row["engagement"].iloc[0] if len(st_row) > 0 else "—"
         sessions = int(st_row["total_sessions"].iloc[0]) if len(st_row) > 0 else 0
         mins = float(st_row["total_mins"].iloc[0]) if len(st_row) > 0 else 0
         consistency = float(st_row["avg_consistency"].iloc[0]) if len(st_row) > 0 else 0
 
-        eng_emoji = {"High": "🟢", "Medium": "🟡", "Low": "🔴"}
-
-        h1, h2, h3, h4 = st.columns(4)
-        h1.metric("Engagement", f"{eng_emoji.get(engagement, '')} {engagement}")
-        h2.metric("Total Sessions", sessions)
-        h3.metric("Total Practice", f"{mins / 60:.1f} hrs")
-        h4.metric("Avg Consistency", f"{consistency:.0f}%")
+        h1, h2, h3 = st.columns(3)
+        h1.metric("Total Sessions", sessions)
+        h2.metric("Total Practice", f"{mins / 60:.1f} hrs")
+        h3.metric("Avg Consistency", f"{consistency:.0f}%")
 
         # Movement summary
         if len(mv_row) > 0 and mv_row.iloc[0]["months_active"] >= 2:
@@ -526,31 +603,36 @@ elif page == "Student Lookup":
                     )
 
             if dim_data:
-                fig = px.line(
+                fig = px.bar(
                     pd.DataFrame(dim_data),
-                    x="Month",
+                    x="Dimension",
                     y="CEFR",
-                    color="Dimension",
-                    markers=True,
+                    color="Month",
+                    barmode="group",
                     height=350,
-                    category_orders={"Month": MONTH_ORDER},
+                    category_orders={
+                        "Month": MONTH_ORDER,
+                        "Dimension": [
+                            "Overall",
+                            "Fluency",
+                            "Accuracy",
+                            "Range",
+                            "Coherence",
+                        ],
+                    },
+                    color_discrete_sequence=["#93c5fd", "#6ee7b7", "#fca5a5"],
                 )
                 fig.update_yaxes(
-                    tickvals=[0, 1, 1.5, 2, 2.5, 3, 4],
-                    ticktext=[
-                        "Pre-A1",
-                        "A1",
-                        "Str A1",
-                        "A2",
-                        "Str A2",
-                        "B1",
-                        "B2",
-                    ],
-                    range=[0, 3.5],
+                    tickvals=[0, 1, 2, 3, 4, 5, 6],
+                    ticktext=["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"],
+                    range=[0, 6.5],
+                    title="",
                 )
                 fig.update_layout(
                     xaxis_title="",
+                    legend_title="Month",
                     font=dict(size=12),
+                    plot_bgcolor="white",
                     margin=dict(l=40, r=20, t=20, b=30),
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -559,7 +641,7 @@ elif page == "Student Lookup":
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE 3: WEEKLY DETAIL (TEACHERS)
 # ═══════════════════════════════════════════════════════════════════════════════
-elif page == "Weekly Detail (Teachers)":
+elif page == "Weekly Report":
     st.title("Weekly CEFR Detail")
 
     f1, f2 = st.columns(2)

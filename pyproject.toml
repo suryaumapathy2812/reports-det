@@ -8,5 +8,6 @@ dependencies = [
     "google-genai>=1.64.0",
     "plotly>=6.5.2",
     "python-dotenv>=1.2.1",
+    "scipy>=1.17.1",
     "streamlit>=1.54.0",
 ]
