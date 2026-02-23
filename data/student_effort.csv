@@ -1,0 +1,166 @@
+student,month,session_count,total_duration_secs,total_duration_mins,active_days,total_program_days,consistency_pct,avg_daily_mins,unique_activities,unique_topics
+Adesh Sunil Gayakwad,December,5,173,2.9,2,17,11.8,1.4,2,2
+Adithya Anil Kanere,December,15,975,16.2,7,17,41.2,2.3,7,2
+Adithya Anil Kanere,January,8,515,8.6,2,27,7.4,4.3,4,2
+Ajith I,December,12,1475,24.6,8,17,47.1,3.1,7,2
+Ajith I,February,1,220,3.7,1,16,6.2,3.7,1,1
+Ajith I,January,20,3308,55.1,3,27,11.1,18.4,3,2
+Anand Gangu Bajari,December,13,1405,23.4,9,17,52.9,2.6,8,2
+Anand Gangu Bajari,January,11,1695,28.2,7,27,25.9,4.0,9,3
+Ananda S,December,33,1465,24.4,6,17,35.3,4.1,4,2
+Ananda S,February,1,118,2.0,1,16,6.2,2.0,1,1
+Ananda S,January,4,263,4.4,3,27,11.1,1.5,4,2
+Anjali Omkar Dhule,December,49,2896,48.3,7,17,41.2,6.9,8,2
+Anjali Omkar Dhule,February,9,1161,19.4,3,16,18.8,6.5,5,2
+Anjali Omkar Dhule,January,21,2682,44.7,10,27,37.0,4.5,13,6
+Anjana Sanjay Ramaj,December,24,1882,31.4,7,17,41.2,4.5,7,2
+Ashwini D,December,26,2495,41.6,6,17,35.3,6.9,7,2
+Ashwini D,February,2,197,3.3,2,16,12.5,1.6,2,2
+Ashwini D,January,19,1848,30.8,7,27,25.9,4.4,10,3
+Ashwini Shahurao Mane,December,19,3443,57.4,10,17,58.8,5.7,8,2
+Ashwini Shahurao Mane,February,1,252,4.2,1,16,6.2,4.2,1,1
+Ashwini Shahurao Mane,January,26,5591,93.2,10,27,37.0,9.3,15,4
+Charan Chandru,December,6,1074,17.9,4,17,23.5,4.5,6,2
+Charan Chandru,February,1,261,4.3,1,16,6.2,4.3,1,1
+Charan Chandru,January,14,3644,60.7,8,27,29.6,7.6,13,7
+Daneshwari S Hipparagi,December,21,2166,36.1,4,17,23.5,9.0,8,2
+Daneshwari S Hipparagi,February,5,190,3.2,2,16,12.5,1.6,3,2
+Daneshwari S Hipparagi,January,17,2082,34.7,9,27,33.3,3.9,15,6
+Dastageerpatel Husenpatel Biradar,December,13,1075,17.9,5,17,29.4,3.6,7,3
+Dastageerpatel Husenpatel Biradar,February,2,249,4.2,2,16,12.5,2.1,2,1
+Dastageerpatel Husenpatel Biradar,January,8,772,12.9,4,27,14.8,3.2,5,2
+Gangadhar Kallayya Nigadimath,December,8,500,8.3,3,17,17.6,2.8,7,3
+Gangadhar Kallayya Nigadimath,January,10,959,16.0,4,27,14.8,4.0,9,6
+Harshad M,December,19,1194,19.9,10,17,58.8,2.0,8,2
+Harshad M,January,6,459,7.7,4,27,14.8,1.9,6,2
+Harshita Mohan Bhandari,December,14,693,11.6,7,17,41.2,1.7,7,2
+Harshita Mohan Bhandari,January,5,450,7.5,2,27,7.4,3.8,3,2
+Jannesh Yadav,December,15,1555,25.9,5,17,29.4,5.2,8,2
+Jannesh Yadav,February,3,308,5.1,2,16,12.5,2.5,3,2
+Jannesh Yadav,January,15,1525,25.4,7,27,25.9,3.6,12,4
+Keerti Balappa Halalli,December,17,2002,33.4,8,17,47.1,4.2,9,3
+Keerti Balappa Halalli,January,10,1565,26.1,6,27,22.2,4.4,6,3
+Kousar B,December,20,826,13.8,5,17,29.4,2.8,9,3
+Kousar B,January,21,1017,16.9,11,27,40.7,1.5,12,6
+Lanchana S,December,17,2030,33.8,7,17,41.2,4.8,8,2
+Lanchana S,January,5,671,11.2,5,27,18.5,2.2,5,3
+Lavakumar Gopal Kadam,December,2,81,1.4,2,17,11.8,0.7,2,1
+Lavakumar Gopal Kadam,February,4,399,6.7,2,16,12.5,3.4,3,2
+Lavakumar Gopal Kadam,January,23,1371,22.9,10,27,37.0,2.3,12,4
+Mahesh Patil,December,19,1013,16.9,5,17,29.4,3.4,8,2
+Mahesh Patil,January,16,1629,27.1,9,27,33.3,3.0,8,3
+Mallikjan D Ammanagi,December,23,2977,49.6,16,17,94.1,3.1,8,2
+Mallikjan D Ammanagi,February,1,76,1.3,1,16,6.2,1.3,1,1
+Mallikjan D Ammanagi,January,12,1752,29.2,10,27,37.0,2.9,8,5
+Maruti Kulakarani,December,10,520,8.7,5,17,29.4,1.7,7,2
+Maruti Kulakarani,February,1,75,1.2,1,16,6.2,1.2,1,1
+Maruti Kulakarani,January,7,517,8.6,5,27,18.5,1.7,4,2
+Methgal Manjunatha,December,11,454,7.6,9,17,52.9,0.8,7,2
+Methgal Manjunatha,January,6,429,7.2,4,27,14.8,1.8,5,3
+Nagaraj A S,December,10,840,14.0,5,17,29.4,2.8,4,2
+Nagaraj A S,February,1,26,0.4,1,16,6.2,0.4,1,1
+Nagaraj A S,January,12,1496,24.9,5,27,18.5,5.0,8,3
+Nagaraj S,December,19,2042,34.0,11,17,64.7,3.1,8,2
+Nagaraj S,February,3,314,5.2,3,16,18.8,1.7,2,2
+Nagaraj S,January,8,1152,19.2,6,27,22.2,3.2,6,4
+Nagesh D,December,11,795,13.2,4,17,23.5,3.3,7,2
+Nagesh D,January,3,350,5.8,2,27,7.4,2.9,3,2
+Najeer Jameerahmad Ammanagi,December,17,878,14.6,4,17,23.5,3.6,8,2
+Najeer Jameerahmad Ammanagi,February,9,206,3.4,5,16,31.2,0.7,9,5
+Najeer Jameerahmad Ammanagi,January,18,1232,20.5,9,27,33.3,2.3,18,8
+Nikita Kelur,December,14,1273,21.2,10,17,58.8,2.1,8,2
+Nikita Kelur,January,14,1657,27.6,9,27,33.3,3.1,10,5
+Nirmala M Ajyal,December,21,1873,31.2,5,17,29.4,6.2,8,2
+P M Anil Kumar,December,5,354,5.9,3,17,17.6,2.0,4,2
+P M Anil Kumar,January,8,564,9.4,5,27,18.5,1.9,6,2
+Parashuram Pyati Guddappa Pyati,December,10,829,13.8,5,17,29.4,2.8,8,2
+Parashuram Pyati Guddappa Pyati,February,5,187,3.1,3,16,18.8,1.0,5,3
+Parashuram Pyati Guddappa Pyati,January,11,880,14.7,6,27,22.2,2.4,9,5
+Pavitra Shivgondi,December,18,1326,22.1,8,17,47.1,2.8,8,2
+Pavitra Shivgondi,February,2,128,2.1,2,16,12.5,1.1,2,2
+Pavitra Shivgondi,January,7,775,12.9,4,27,14.8,3.2,5,2
+Priyanka Mahantesh Balikai,December,16,1870,31.2,11,17,64.7,2.8,8,2
+Priyanka Mahantesh Balikai,January,34,7290,121.5,13,27,48.1,9.3,10,3
+Rajeshnaik H,December,12,1163,19.4,10,17,58.8,1.9,9,3
+Rajeshnaik H,February,11,1505,25.1,5,16,31.2,5.0,11,3
+Rajeshnaik H,January,13,2599,43.3,9,27,33.3,4.8,13,4
+Ramesh Ramesh Praveen,December,16,742,12.4,6,17,35.3,2.1,6,2
+Ramesh Ramesh Praveen,February,2,269,4.5,2,16,12.5,2.2,2,2
+Ramesh Ramesh Praveen,January,6,691,11.5,4,27,14.8,2.9,5,3
+Ramu Edige,December,19,1630,27.2,9,17,52.9,3.0,7,2
+Ramu Edige,January,13,1114,18.6,6,27,22.2,3.1,6,2
+Ramu Kharat,December,13,638,10.6,5,17,29.4,2.1,5,2
+Ramu Kharat,February,1,60,1.0,1,16,6.2,1.0,1,1
+Ramu Kharat,January,18,898,15.0,6,27,22.2,2.5,16,7
+Ramya Yadav B,December,25,2239,37.3,11,17,64.7,3.4,8,2
+Ramya Yadav B,January,17,1538,25.6,7,27,25.9,3.7,11,3
+Revanasidda Nagabasappa Deagaon,December,11,654,10.9,5,17,29.4,2.2,8,2
+Revanasidda Nagabasappa Deagaon,February,5,369,6.2,4,16,25.0,1.6,5,4
+Revanasidda Nagabasappa Deagaon,January,24,1530,25.5,10,27,37.0,2.5,17,6
+Rukmini Kokare,December,11,688,11.5,8,17,47.1,1.4,4,2
+Rukmini Kokare,February,5,563,9.4,2,16,12.5,4.7,4,4
+Rukmini Kokare,January,18,1923,32.0,12,27,44.4,2.7,8,2
+S Punith,December,16,640,10.7,9,17,52.9,1.2,8,2
+S Punith,January,6,314,5.2,5,27,18.5,1.0,5,3
+Sagar Mallikarjungouda Patil,December,7,1255,20.9,3,17,17.6,7.0,5,2
+Sagar Mallikarjungouda Patil,February,2,341,5.7,2,16,12.5,2.9,2,1
+Sagar Mallikarjungouda Patil,January,2,618,10.3,2,27,7.4,5.2,1,1
+Sahana Yadav R,December,9,842,14.0,7,17,41.2,2.0,5,2
+Sahana Yadav R,January,34,2540,42.3,6,27,22.2,7.0,9,3
+Sakshi A Kurhade,December,13,832,13.9,5,17,29.4,2.8,8,2
+Sakshi A Kurhade,February,4,607,10.1,4,16,25.0,2.5,4,4
+Sakshi A Kurhade,January,23,2254,37.6,9,27,33.3,4.2,14,5
+Sandesha Divigihalli,December,4,292,4.9,2,17,11.8,2.5,3,2
+Sandesha Divigihalli,February,2,118,2.0,2,16,12.5,1.0,2,2
+Sandesha Divigihalli,January,10,838,14.0,7,27,25.9,2.0,10,6
+Sanjana K,December,12,1114,18.6,7,17,41.2,2.7,7,2
+Sanjana K,February,7,1442,24.0,6,16,37.5,4.0,6,5
+Sanjana K,January,21,4861,81.0,11,27,40.7,7.4,18,7
+Sanjana Rajanna Choudri,December,16,859,14.3,7,17,41.2,2.0,7,2
+Sanjana Rajanna Choudri,January,24,1173,19.6,6,27,22.2,3.3,12,5
+Sateesh Annasaheb Desayi,December,6,333,5.5,5,17,29.4,1.1,4,2
+Shaik Almas,December,9,647,10.8,9,17,52.9,1.2,9,3
+Shaik Almas,February,3,158,2.6,3,16,18.8,0.9,3,2
+Shaik Almas,January,20,1211,20.2,16,27,59.3,1.3,16,5
+Shilata R Kadam,December,16,1657,27.6,5,17,29.4,5.5,6,2
+Shilata R Kadam,January,5,808,13.5,3,27,11.1,4.5,5,3
+Shivaraj Karigar,December,8,745,12.4,8,17,47.1,1.6,8,2
+Shobha R K,December,17,2347,39.1,12,17,70.6,3.3,9,3
+Shobha R K,January,27,3099,51.6,13,27,48.1,4.0,23,8
+Shrishail Ramappa Giddagoudar,December,15,876,14.6,8,17,47.1,1.8,8,2
+Shrishail Ramappa Giddagoudar,February,1,104,1.7,1,16,6.2,1.7,1,1
+Shrishail Ramappa Giddagoudar,January,27,1783,29.7,8,27,29.6,3.7,9,3
+Sindhu Jambanna Madiwalar,December,15,1274,21.2,6,17,35.3,3.5,8,2
+Sindhu Jambanna Madiwalar,January,18,2205,36.8,6,27,22.2,6.1,17,6
+Snehal Mali,December,19,1656,27.6,9,17,52.9,3.1,8,2
+Snehal Mali,February,4,480,8.0,3,16,18.8,2.7,4,2
+Snehal Mali,January,26,3337,55.6,12,27,44.4,4.6,11,3
+Soumya A Halalli,December,10,1432,23.9,4,17,23.5,6.0,6,2
+Soumya A Halalli,February,1,220,3.7,1,16,6.2,3.7,1,1
+Soumya A Halalli,January,13,3019,50.3,7,27,25.9,7.2,10,4
+Soumya M Kumatagi,December,21,1055,17.6,9,17,52.9,2.0,8,2
+Soumya M Kumatagi,January,21,1178,19.6,4,27,14.8,4.9,6,2
+Sushmita S Kempalingannavar,December,19,1609,26.8,5,17,29.4,5.4,8,2
+Sushmita S Kempalingannavar,February,3,517,8.6,3,16,18.8,2.9,3,3
+Sushmita S Kempalingannavar,January,11,1549,25.8,6,27,22.2,4.3,8,2
+Tanusha J T,December,12,1299,21.6,5,17,29.4,4.3,8,2
+Tanusha J T,February,1,115,1.9,1,16,6.2,1.9,1,1
+Tanusha J T,January,24,2329,38.8,8,27,29.6,4.8,12,5
+Umesh Dhanaraj,December,17,1145,19.1,10,17,58.8,1.9,8,2
+Umesh Dhanaraj,January,7,800,13.3,6,27,22.2,2.2,7,4
+Varsha PS,December,18,1339,22.3,5,17,29.4,4.5,6,2
+Varsha PS,January,14,3200,53.3,7,27,25.9,7.6,10,5
+Varun Raju Raibagi,December,19,1180,19.7,9,17,52.9,2.2,8,2
+Varun Raju Raibagi,January,11,711,11.8,2,27,7.4,5.9,8,2
+Vidya Y Bhajantri,December,10,615,10.2,4,17,23.5,2.5,8,2
+Vidya Y Bhajantri,January,15,1134,18.9,4,27,14.8,4.7,8,2
+Vinutha K,December,21,1634,27.2,7,17,41.2,3.9,8,3
+Vinutha K,January,20,3528,58.8,11,27,40.7,5.3,8,3
+Viresh Dhabale,December,18,1098,18.3,9,17,52.9,2.0,8,2
+Viresh Dhabale,January,2,300,5.0,2,27,7.4,2.5,1,1
+Yamini M,December,19,782,13.0,11,17,64.7,1.2,8,2
+Yamini M,January,18,1438,24.0,7,27,25.9,3.4,11,3
+Yashodha Jamadar,December,9,781,13.0,2,17,11.8,6.5,8,2
+Yashodha Jamadar,January,4,302,5.0,3,27,11.1,1.7,2,1
+Yashwant G Kammar,December,3,304,5.1,2,17,11.8,2.5,3,1
+Yashwant G Kammar,January,6,897,14.9,4,27,14.8,3.7,3,1
