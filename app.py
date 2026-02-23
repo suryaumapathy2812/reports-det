@@ -560,18 +560,6 @@ elif page == "Student Wise Data":
         h2.metric("Total Practice", f"{mins / 60:.1f} hrs")
         h3.metric("Avg Consistency", f"{consistency:.0f}%")
 
-        # Movement summary
-        if len(mv_row) > 0 and mv_row.iloc[0]["months_active"] >= 2:
-            row = mv_row.iloc[0]
-            dims_up = row["dims_improved"]
-            dims_down = row["dims_declined"]
-            if dims_up:
-                st.success(f"**Improved in:** {dims_up}")
-            elif dims_down:
-                st.warning(f"**Declined in:** {dims_down}")
-            else:
-                st.info("**Stable** across all dimensions")
-
         st.markdown("---")
         st.subheader("Monthly CEFR Scores")
         detail = sdata[
@@ -679,6 +667,18 @@ elif page == "Weekly Report":
     if sel_student != "All":
         filtered = filtered[filtered["student"] == sel_student]
 
+    # Build relative week label: "Dec W1", "Dec W2", etc.
+    _week_order = (
+        weekly_cefr[["month", "week"]].drop_duplicates().sort_values(["month", "week"])
+    )
+    _week_label_map = {}
+    for month, grp in _week_order.groupby("month", sort=False):
+        for i, w in enumerate(grp["week"], start=1):
+            _week_label_map[w] = f"{str(month)[:3]} W{i}"
+
+    filtered = filtered.copy()
+    filtered["week_label"] = filtered["week"].map(_week_label_map)
+
     if sel_student != "All" and len(filtered) > 1:
         chart_data = []
         for _, row in filtered.iterrows():
@@ -688,7 +688,7 @@ elif page == "Weekly Report":
                 val = CEFR_NUMERIC.get(row.get(col, ""), None)
                 if val is not None:
                     chart_data.append(
-                        {"Week": row["week"], "Dimension": label, "CEFR": val}
+                        {"Week": row["week_label"], "Dimension": label, "CEFR": val}
                     )
 
         if chart_data:
@@ -713,7 +713,7 @@ elif page == "Weekly Report":
     display = filtered[
         [
             "student",
-            "week",
+            "week_label",
             "month",
             "overall_level",
             "fluency",
@@ -834,45 +834,28 @@ elif page == "Mentor Feedback":
 
     st.markdown("---")
 
-    # ── Student-wise view ─────────────────────────────────────────────────────
-    if selected_student != "All":
-        st.subheader(f"{selected_student}")
-        student_entries = view[view["feedback"].notna()].sort_values("date")
-        if len(student_entries) == 0:
-            st.info("No feedback recorded for this student.")
-        else:
-            for _, row in student_entries.iterrows():
-                with st.expander(
-                    f"📅 {row['date'].strftime('%d %b %Y')}  ·  {row['mentor']}  ·  {row['cohort']}"
-                ):
-                    st.markdown(row["feedback"])
-
-    # ── Mentor-wise or all view ───────────────────────────────────────────────
-    else:
-        for mentor in mentors if selected_mentor == "All" else [selected_mentor]:
-            mentor_view = view[view["mentor"] == mentor]
-            with st.expander(
-                f"**{mentor}** — {mentor_view['student'].nunique()} students · {int(mentor_view['feedback'].notna().sum())} entries",
-                expanded=False,
-            ):
-                for student in sorted(mentor_view["student"].unique()):
-                    s_entries = mentor_view[
-                        (mentor_view["student"] == student)
-                        & mentor_view["feedback"].notna()
-                    ].sort_values("date")
-                    if len(s_entries) == 0:
-                        continue
-                    st.markdown(f"**{student}**")
-                    for _, row in s_entries.iterrows():
-                        st.markdown(
-                            f"<div style='background:#f8fafc;border-left:3px solid #93c5fd;"
-                            f"padding:8px 12px;margin:4px 0 8px 0;border-radius:4px;"
-                            f"font-size:0.9rem;color:#1e293b'>"
-                            f"<span style='color:#64748b;font-size:0.8rem'>{row['date'].strftime('%d %b %Y')} · {row['cohort']}</span><br>"
-                            f"{row['feedback']}</div>",
-                            unsafe_allow_html=True,
-                        )
-                    st.markdown("")
+    # ── Student-wise view (always grouped by student) ────────────────────────
+    for student in sorted(view["student"].dropna().unique()):
+        s_entries = view[
+            (view["student"] == student) & view["feedback"].notna()
+        ].sort_values("date")
+        if len(s_entries) == 0:
+            continue
+        with st.expander(
+            f"**{student}** — {len(s_entries)} feedback entries",
+            expanded=(selected_student == student),
+        ):
+            for _, row in s_entries.iterrows():
+                st.markdown(
+                    f"<div style='background:#f8fafc;border-left:3px solid #93c5fd;"
+                    f"padding:8px 12px;margin:4px 0 8px 0;border-radius:4px;"
+                    f"font-size:0.9rem;color:#1e293b'>"
+                    f"<span style='color:#64748b;font-size:0.8rem'>"
+                    f"📅 {row['date'].strftime('%d %b %Y')} · {row['mentor']} · {row['cohort']}"
+                    f"</span><br>{row['feedback']}</div>",
+                    unsafe_allow_html=True,
+                )
+            st.markdown("")
 
 
 # ─── Footer ───────────────────────────────────────────────────────────────────
