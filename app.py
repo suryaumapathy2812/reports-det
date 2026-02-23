@@ -496,45 +496,46 @@ if page == "Program Overview":
     st.plotly_chart(fig_cefr_dist, use_container_width=True)
 
     # ══════════════════════════════════════════════════════════════════════
-    # LEVEL TRANSITIONS
+    # TOP 10 & BOTTOM 10 BY TALK TIME
     # ══════════════════════════════════════════════════════════════════════
     st.markdown("---")
-    st.subheader("Level Transitions")
-    st.caption(
-        "Students who moved up at least one full CEFR level — "
-        "Pre-A1 → A1, A1 → A2, or Pre-A1 → A2."
+
+    # Build talk-time table (Dec + Jan only) joined with Jan CEFR
+    _effort_dj = effort[effort["month"].isin(["December", "January"])]
+    _talk = (
+        _effort_dj.groupby("student")["total_duration_mins"]
+        .sum()
+        .reset_index()
+        .rename(columns={"total_duration_mins": "Total Talktime"})
+    )
+    _jan_cefr = combined[combined["month"] == "January"][
+        ["student", "overall_level"]
+    ].rename(columns={"overall_level": "CEFR"})
+    _talk = _talk.merge(_jan_cefr, on="student", how="left")
+    _talk["Total Talktime"] = _talk["Total Talktime"].round(1)
+    _talk = _talk.rename(columns={"student": "Student"}).sort_values(
+        "Total Talktime", ascending=False
     )
 
-    VALID_TRANSITIONS = {
-        ("Pre-A1", "A1"),
-        ("A1", "A2"),
-        ("Pre-A1", "A2"),
-    }
+    top10 = _talk.head(10).reset_index(drop=True)
+    top10.index += 1
+    _cefr_order = {level: i for i, level in enumerate(CEFR_ORDER)}
+    bottom10 = (
+        _talk[_talk["CEFR"].isin(["Pre-A1", "A1"])]
+        .assign(_cefr_rank=_talk["CEFR"].map(_cefr_order))
+        .sort_values("_cefr_rank")
+        .drop(columns="_cefr_rank")
+        .reset_index(drop=True)
+    )
+    bottom10.index += 1
 
-    transition_rows = []
-    for _, row in movements_df[movements_df["months_active"] >= 2].iterrows():
-        pair = (row["overall_first"], row["overall_last"])
-        if pair in VALID_TRANSITIONS:
-            transition_rows.append(
-                {
-                    "Student": row["student"],
-                    "From": row["overall_first"],
-                    "To": row["overall_last"],
-                }
-            )
-
-    if transition_rows:
-        trans_df = pd.DataFrame(transition_rows).sort_values(["From", "To"])
-        # Summary counts
-        t1, t2, t3 = st.columns(3)
-        for col, (frm, to) in zip(
-            [t1, t2, t3], [("Pre-A1", "A1"), ("A1", "A2"), ("Pre-A1", "A2")]
-        ):
-            n = int(((trans_df["From"] == frm) & (trans_df["To"] == to)).sum())
-            col.metric(f"{frm} → {to}", n)
-        st.dataframe(trans_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No level transitions found in the current data.")
+    tt1, tt2 = st.columns(2)
+    with tt1:
+        st.subheader("Top Students by Talktime")
+        st.dataframe(top10, use_container_width=True)
+    with tt2:
+        st.subheader("Students in Lower CEFR Level")
+        st.dataframe(bottom10, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -772,7 +773,20 @@ elif page == "Mentor Feedback":
             return json.load(f)
 
     feedback_data = load_mentor_feedback()
-    mentors = sorted(feedback_data.keys())
+    MENTOR_ORDER = [
+        "Falaknaaz Chawan",
+        "Gayatri G",
+        "Magdalin V Kanavalli",
+        "Mahammadgous Khadarnaikar M",
+        "Netra S Rao",
+        "Pooja Patil",
+        "Prabhavati M K",
+        "Shobha Angadi",
+        "Vidudala Ashish",
+    ]
+    mentors = [m for m in MENTOR_ORDER if m in feedback_data] + [
+        m for m in sorted(feedback_data.keys()) if m not in MENTOR_ORDER
+    ]
 
     # Flatten to a single dataframe for cross-mentor student lookup
     all_rows = []
