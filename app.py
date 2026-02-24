@@ -18,6 +18,22 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─── Custom OpenGraph Meta Tags ───────────────────────────────────────────────
+st.markdown(
+    """
+    <head>
+        <meta property="og:title" content="DET Program — CEFR Progress Report" />
+        <meta property="og:description" content="Track student English proficiency progress across the DET program" />
+        <meta property="og:url" content="https://reports-det.streamlit.app/" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="DET Program — CEFR Progress Report" />
+        <meta name="twitter:description" content="Track student English proficiency progress across the DET program" />
+    </head>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ─── Constants ────────────────────────────────────────────────────────────────
 CEFR_ORDER = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]
 CEFR_NUMERIC = {
